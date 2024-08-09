@@ -64,7 +64,7 @@ export default function SelectTraveller() {
                 setSelectedTraveller(item);
               }}
             >
-              <OptionCard option={item} selectedTraveller={selectedTraveller} />
+              <OptionCard option={item} selectedOption={selectedTraveller} />
             </TouchableOpacity>
           )}
         />

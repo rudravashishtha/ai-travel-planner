@@ -11,6 +11,7 @@ import { useNavigation, useRouter } from "expo-router";
 import { Colors } from "@/constants/Colors";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../../configs/firebaseConfig";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SignIn() {
   const navigation = useNavigation();
@@ -18,17 +19,61 @@ export default function SignIn() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({
       headerShown: false,
     });
+
+    const checkForStoredCredentials = async () => {
+      const storedEmail = await AsyncStorage.getItem('user-email');
+      const storedPassword = await AsyncStorage.getItem('user-password');
+      if (storedEmail && storedPassword) {
+        setEmail(JSON.parse(storedEmail));
+        setPassword(JSON.parse(storedPassword));
+        handleSignIn(JSON.parse(storedEmail), JSON.parse(storedPassword));
+      }
+    };
+
+    checkForStoredCredentials();
   }, []);
 
-  const onSignIn = () => {
+  const handleSignIn = async (email, password) => {
     setLoading(true);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      await AsyncStorage.setItem("user-email", JSON.stringify(email));
+      await AsyncStorage.setItem("user-password", JSON.stringify(password));
+      ToastAndroid.show(
+        `Welcome back, ${user.email}`,
+        ToastAndroid.BOTTOM,
+        ToastAndroid.LONG
+      );
+      router.replace("/mytrip");
+    } catch (error) {
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      if (errorCode === "auth/invalid-credential") {
+        ToastAndroid.show(
+          "Invalid credentials",
+          ToastAndroid.BOTTOM,
+          ToastAndroid.LONG
+        );
+      } else {
+        ToastAndroid.show(
+          errorMessage,
+          ToastAndroid.BOTTOM,
+          ToastAndroid.LONG
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onSignIn = async () => {
     if (!email || !password) {
       ToastAndroid.show(
         "Please fill all fields",
@@ -37,33 +82,7 @@ export default function SignIn() {
       );
       return;
     }
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        // Signed in
-        const user = userCredential.user;
-        ToastAndroid.show(
-          `Welcome back, ${user.email}`,
-          ToastAndroid.BOTTOM,
-          ToastAndroid.LONG
-        );
-        router.replace("/mytrip");
-        setLoading(false);
-      })
-      .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        // console.log(errorCode, errorMessage);
-
-        if (errorCode === "auth/invalid-credential") {
-          ToastAndroid.show(
-            "Invalid credentials",
-            ToastAndroid.BOTTOM,
-            ToastAndroid.LONG
-          );
-          setLoading(false);
-        }
-      });
+    handleSignIn(email, password);
   };
 
   return (
@@ -99,6 +118,7 @@ export default function SignIn() {
         <TextInput
           style={styles.input}
           placeholder="Enter Email"
+          value={email}
           onChangeText={(text) => setEmail(text)}
         />
       </View>
@@ -110,6 +130,7 @@ export default function SignIn() {
           style={styles.input}
           secureTextEntry={true}
           placeholder="Enter Password"
+          value={password}
           onChangeText={(text) => setPassword(text)}
         />
       </View>
@@ -130,9 +151,7 @@ export default function SignIn() {
             textAlign: "center",
           }}
         >
-          {
-            loading ? "Signing In..." : "Sign In"
-          }
+          {loading ? "Signing In..." : "Sign In"}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity

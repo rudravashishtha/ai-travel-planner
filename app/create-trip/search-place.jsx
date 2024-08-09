@@ -33,10 +33,12 @@ export default function SearchPlace() {
         onPress={(data, details) => {
           // console.log(data, details);
           setTripData({
-            locationInfo: data.description,
-            coordinates: details?.geometry.location,
-            photoRef: details?.photos?.[0]?.photo_reference,
-            url: details?.url,
+            locationInfo: {
+              name: data.description,
+              coordinates: details?.geometry.location,
+              photoRef: details?.photos?.[0]?.photo_reference,
+              url: details?.url,
+            },
           });
           router.push("/create-trip/select-traveller");
         }}
@@ -53,14 +55,18 @@ export default function SearchPlace() {
         }}
       />
       <View>
-        <Link style={{
-          textAlign: "center",
-          borderWidth: 1,
-          borderColor: "black",
-          padding: 10,
-          margin: 20,
-
-        }} href={"/create-trip/select-traveller"}>Click Here</Link>
+        <Link
+          style={{
+            textAlign: "center",
+            borderWidth: 1,
+            borderColor: "black",
+            padding: 10,
+            margin: 20,
+          }}
+          href={"/create-trip/select-traveller"}
+        >
+          Click Here
+        </Link>
         <Text style={{ fontFamily: "outfit-regular", textAlign: "center" }}>
           LIFE IS short AND THE WORLD IS WIIIIDE
         </Text>
